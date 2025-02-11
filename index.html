@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="file.css">
+</head>
+<body>
+    <div class="controls">
+        <label for="resultsPerPage">Results per page:</label>
+        <select id="resultsPerPage">
+            <option value="10" selected>10</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Description</th>
+                <th>Published</th>
+                <th>CVE Score</th>
+            </tr>
+        </thead>
+        <tbody id="cveTableBody">
+            <!-- CVE Data will be inserted here -->
+        </tbody>
+    </table>
+    
+    <div class="pagination">
+        <button id="prevPage" disabled>Previous</button>
+        <span id="pageInfo"></span>
+        <button id="nextPage">Next</button>
+    </div>
+    
+    <script>
+        const apiUrl = "http://localhost:5000/api/cves";
+        const resultsPerPageSelect = document.getElementById("resultsPerPage");
+        const tableBody = document.getElementById("cveTableBody");
+        const prevPageBtn = document.getElementById("prevPage");
+        const nextPageBtn = document.getElementById("nextPage");
+        const pageInfo = document.getElementById("pageInfo");
+    
+        let currentPage = 1;
+        let totalPages = 1;
+        let resultsPerPage = 10;
+    
+        async function fetchCves() {
+            try {
+                const response = await fetch(`${apiUrl}?page=${currentPage}&limit=${resultsPerPage}`);
+                const data = await response.json();
+                
+                displayCves(data.cves);
+                totalPages = data.totalPages;
+                pageInfo.innerText = `Page ${currentPage} of ${totalPages}`;
+    
+                // Disable buttons when necessary
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages;
+            } catch (error) {
+                console.error("Error fetching CVEs:", error);
+            }
+        }
+    
+        function displayCves(cves) {
+            tableBody.innerHTML = "";
+            cves.forEach(cve => {
+                const row = `<tr>
+                    <td>${cve.id}</td>
+                    <td>${cve.description}</td>
+                    <td>${cve.published}</td>
+                    <td>${cve.cveScore || "N/A"}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+    
+        // Pagination button event listeners
+        prevPageBtn.addEventListener("click", () => {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchCves();
+            }
+        });
+    
+        nextPageBtn.addEventListener("click", () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                fetchCves();
+            }
+        });
+    
+        // Results per page change event listener
+        resultsPerPageSelect.addEventListener("change", function () {
+            resultsPerPage = parseInt(this.value);
+            currentPage = 1; // Reset to first page
+            fetchCves();
+        });
+    
+        // Fetch CVEs on page load
+        fetchCves();
+    </script>
+</body>
+</html>
